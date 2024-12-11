@@ -268,3 +268,12 @@ client.on('messageCreate', async (message) => {
         message.reply(helpMessage);
         break;
       }
+    } // Đóng switch
+
+  } catch (err) {
+    console.error(err);
+    message.reply('Đã xảy ra lỗi khi xử lý lệnh.');
+  }
+}); // Đóng messageCreate
+
+client.login(process.env.BOT_TOKEN);
