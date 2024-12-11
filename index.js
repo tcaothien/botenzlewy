@@ -74,6 +74,64 @@ client.on('messageCreate', async (message) => {
 
   try {
     switch (command) {
+
+           // Lệnh kiểm tra số dư
+      case 'money': {
+        message.reply(`Số dư của bạn: ${user.xu} xu.`);
+        break;
+      }
+
+      // Lệnh cộng tiền cho người dùng (Admin)
+      case 'addmoney': {
+        if (!message.member.permissions.has('ADMINISTRATOR')) {
+          message.reply("Bạn không có quyền thực hiện lệnh này!");
+          break;
+        }
+
+        const target = message.mentions.users.first();
+        const amount = parseInt(args[1]);
+
+        if (!target || isNaN(amount) || amount <= 0) {
+          message.reply("Hãy nhập đúng định dạng: `e addmoney @user số_xu`");
+          break;
+        }
+
+        const receiver = await getUser(target.id);
+        receiver.xu += amount;
+        await receiver.save();
+
+        message.reply(`Đã cộng ${amount} xu cho ${target.tag}. Số xu hiện tại của họ: ${receiver.xu}`);
+        break;
+      }
+
+      // Lệnh trừ tiền từ người dùng (Admin)
+      case 'removemoney': {
+        if (!message.member.permissions.has('ADMINISTRATOR')) {
+          message.reply("Bạn không có quyền thực hiện lệnh này!");
+          break;
+        }
+
+        const target = message.mentions.users.first();
+        const amount = parseInt(args[1]);
+
+        if (!target || isNaN(amount) || amount <= 0) {
+          message.reply("Hãy nhập đúng định dạng: `e removemoney @user số_xu`");
+          break;
+        }
+
+        const receiver = await getUser(target.id);
+        if (receiver.xu < amount) {
+          message.reply("Người dùng này không có đủ xu để trừ!");
+          break;
+        }
+
+        receiver.xu -= amount;
+        await receiver.save();
+
+        message.reply(`Đã trừ ${amount} xu từ ${target.tag}. Số xu hiện tại của họ: ${receiver.xu}`);
+        break;
+      }
+
       case 'daily': {
         user.xu += 50000;
         await user.save();
@@ -81,7 +139,7 @@ client.on('messageCreate', async (message) => {
         break;
       }
 
-      case 'transfer': {
+      case 'give': {
         const target = message.mentions.users.first();
         const amount = parseInt(args[1]);
 
@@ -163,14 +221,14 @@ client.on('messageCreate', async (message) => {
         break;
       }
 
-      case 'status': {
+      case 'marrys': {
         const partnerId = user.marriedTo;
         const partner = partnerId ? `<@${partnerId}>` : "Chưa kết hôn";
         message.reply(`**Trạng thái:**\n- Vợ/chồng: ${partner}\n- Điểm yêu thương: ${user.lovePoints}\n- Số xu: ${user.xu}`);
         break;
       }
 
-      case 'love': {
+      case 'luv': {
         const cost = parseInt(args[0]);
         if (isNaN(cost) || cost <= 0 || user.xu < cost) {
           message.reply("Hãy nhập số xu hợp lệ để tăng điểm yêu thương!");
@@ -254,15 +312,13 @@ client.on('messageCreate', async (message) => {
         const helpMessage = `
 **Danh sách lệnh:**
 - \`e daily\`: Nhận 50,000 xu mỗi ngày.
-- \`e transfer @user số_xu\`: Chuyển xu cho người khác.
+- \`e give @user số_xu\`: Chuyển xu cho người khác.
 - \`e marry @user\`: Kết hôn với người được tag (phí 5,000,000 xu).
 - \`e divorce\`: Ly hôn (phí 5,000,000 xu).
-- \`e status\`: Xem trạng thái kết hôn và điểm yêu thương.
-- \`e love số_xu\`: Dùng xu để tăng điểm yêu thương.
+- \`e marrys\`: Xem trạng thái kết hôn và điểm yêu thương.
+- \`e luv số_xu\`: Dùng xu để tăng điểm yêu thương.
 - \`e taixiu số_xu\`: Cược tài xỉu.
-- \`e listreply\`: Xem danh sách các trả lời tự động.
-- \`e addreply từ_khóa nội_dung_trả_lời\`: Thêm trả lời tự động.
-- \`e removereply từ_khóa\`: Xóa trả lời tự động.
+- \`e money\`: Hiển thị số dư.
 - \`e help\`: Hiển thị danh sách các lệnh.
         `;
         message.reply(helpMessage);
