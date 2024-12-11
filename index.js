@@ -258,4 +258,13 @@ client.on('messageCreate', async (message) => {
 - \`e marry @user\`: Kết hôn với người được tag (phí 5,000,000 xu).
 - \`e divorce\`: Ly hôn (phí 5,000,000 xu).
 - \`e status\`: Xem trạng thái kết hôn và điểm yêu thương.
-- \`e love số_xu\`: Dùng xu để tăng điểm yêu
+- \`e love số_xu\`: Dùng xu để tăng điểm yêu thương.
+- \`e taixiu số_xu\`: Cược tài xỉu.
+- \`e listreply\`: Xem danh sách các trả lời tự động.
+- \`e addreply từ_khóa nội_dung_trả_lời\`: Thêm trả lời tự động.
+- \`e removereply từ_khóa\`: Xóa trả lời tự động.
+- \`e help\`: Hiển thị danh sách các lệnh.
+        `;
+        message.reply(helpMessage);
+        break;
+      }
