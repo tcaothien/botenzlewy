@@ -441,7 +441,7 @@ client.on('messageCreate', async (message) => {
         break;
       }
 
-      case 'help': {
+      case 'helps': {
         const helpMessage = `
 **Danh sách lệnh hiện có:**
 - \`exu\`: Kiểm tra số dư xu của bạn.
@@ -461,15 +461,12 @@ client.on('messageCreate', async (message) => {
         message.reply(helpMessage);
         break;
       }
+    } // Đóng switch
 
-      default:
-        message.reply("Lệnh không hợp lệ. Gõ `e help` để xem danh sách lệnh.");
-    }
-  } catch (error) {
-    console.error(error);
-    message.reply("Đã xảy ra lỗi trong quá trình thực hiện lệnh.");
+  } catch (err) {
+    console.error(err);
+    message.reply('Đã xảy ra lỗi khi xử lý lệnh.');
   }
-});
+}); // Đóng messageCreate
 
-// Đăng nhập bot
 client.login(process.env.BOT_TOKEN);
