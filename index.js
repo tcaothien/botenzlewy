@@ -264,18 +264,19 @@ client.on('messageCreate', async (message) => {
       }
 
       case 'listreply': {
-        const replies = await AutoReply.find();
-        if (replies.length === 0) {
-          message.reply("Chưa có trả lời tự động nào.");
-          break;
-        }
+  const replies = await AutoReply.find();
+  if (replies.length === 0) {
+    message.reply("Chưa có trả lời tự động nào.");
+    break;
+  }
 
-        const replyList = replies.map(r => `- "${r.keyword}" → "${r.reply}"`).join('\n');
-        const chunks = replyList.match(/[\s\S]{1,1900}/g); // Chia nhỏ tin nhắn
-        chunks.forEach(chunk => message.channel.send(chunk));
-        break;
-      }
-
+  const replyList = replies.map(r => `- "${r.keyword}" → "${r.reply}"`).join('\n');
+  
+  // Chia nhỏ tin nhắn nếu cần
+  const chunks = replyList.match(/[\s\S]{1,1900}/g); // Chia nhỏ để mỗi phần không vượt quá 1900 ký tự
+  chunks.forEach(chunk => message.channel.send(chunk));
+  break;
+}
       case 'addreply': {
         const keyword = args[0];
         const reply = args.slice(1).join(' ');
