@@ -89,8 +89,6 @@ client.on('messageCreate', async (message) => {
         break;
       }
 
-      const { MessageEmbed } = require('discord.js'); // Đảm bảo đã import MessageEmbed
-
 case 'tx': {
   const bet = parseInt(args[0]); // Số tiền cược
   const choice = args[1]?.toLowerCase(); // "tai" hoặc "xiu"
