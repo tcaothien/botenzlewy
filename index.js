@@ -85,6 +85,59 @@ client.on('messageCreate', async (message) => {
         break;
       }
 
+      case 'tx': {
+  const bet = parseInt(args[0]); // Số tiền cược
+  const choice = args[1]?.toLowerCase(); // "tai" hoặc "xiu"
+
+  if (isNaN(bet) || bet <= 0) {
+    message.reply("Hãy nhập số xu hợp lệ để cược: `e tx số_xu tai/xiu`");
+    break;
+  }
+
+  if (!["tai", "xiu"].includes(choice)) {
+    message.reply("Vui lòng chọn `tai` hoặc `xiu`: `e tx số_xu tai/xiu`");
+    break;
+  }
+
+  if (user.xu < bet) {
+    message.reply("Bạn không đủ xu để thực hiện cược!");
+    break;
+  }
+
+  // Tạo hàm chuyển điểm thành emoji xúc xắc
+  const diceToEmoji = (value) => {
+    const diceEmojis = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+    return diceEmojis[value - 1];
+  };
+
+  // Xúc xắc ngẫu nhiên
+  const dice1 = Math.floor(Math.random() * 6) + 1;
+  const dice2 = Math.floor(Math.random() * 6) + 1;
+  const dice3 = Math.floor(Math.random() * 6) + 1;
+  const total = dice1 + dice2 + dice3;
+
+  // Tổng điểm để xác định kết quả
+  const result = total > 10 ? "tai" : "xiu";
+
+  // Hiển thị xúc xắc bằng emoji
+  const diceDisplay = `${diceToEmoji(dice1)} ${diceToEmoji(dice2)} ${diceToEmoji(dice3)}`;
+
+  if (choice === result) {
+    user.xu += bet; // Thắng
+    await user.save();
+    message.reply(
+      `🎲 Kết quả: ${diceDisplay} (Tổng: ${total} - ${result.toUpperCase()})\n🎉 Bạn đã thắng ${bet} xu! Số xu hiện tại: ${user.xu}`
+    );
+  } else {
+    user.xu -= bet; // Thua
+    await user.save();
+    message.reply(
+      `🎲 Kết quả: ${diceDisplay} (Tổng: ${total} - ${result.toUpperCase()})\n😢 Bạn đã thua ${bet} xu! Số xu hiện tại: ${user.xu}`
+    );
+  }
+  break;
+}
+        
       case 'daily': {
         const reward = Math.floor(Math.random() * (50000 - 10000 + 1)) + 10000;
         user.xu += reward;
@@ -392,6 +445,7 @@ client.on('messageCreate', async (message) => {
         const helpMessage = `
 **Danh sách lệnh hiện có:**
 - \`exu\`: Kiểm tra số dư xu của bạn.
+- \`etx\`: chơi tài xỉu cách chơi etx xu tai/xiu
 - \`edaily\`: Nhận xu ngẫu nhiên từ 10,000 đến 50,000 mỗi ngày.
 - \`egives\`: Chuyển xu cho người dùng khác.
 - \`elove\`: Tăng 1 điểm yêu thương (mỗi giờ sử dụng được 1 lần).
