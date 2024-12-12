@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
+const { Client, GatewayIntentBits, PermissionsBitField, MessageEmbed } = require('discord.js');  // Đã thêm MessageEmbed
 const mongoose = require('mongoose');
 
 // Thiết lập strictQuery để tránh cảnh báo
