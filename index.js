@@ -89,7 +89,9 @@ client.on('messageCreate', async (message) => {
         break;
       }
 
-      case 'tx': {
+      const { MessageEmbed } = require('discord.js'); // Đảm bảo đã import MessageEmbed
+
+case 'tx': {
   const bet = parseInt(args[0]); // Số tiền cược
   const choice = args[1]?.toLowerCase(); // "tai" hoặc "xiu"
 
@@ -126,29 +128,41 @@ client.on('messageCreate', async (message) => {
   // Hiển thị xúc xắc bằng emoji
   const diceDisplay = `${diceToEmoji(dice1)} ${diceToEmoji(dice2)} ${diceToEmoji(dice3)}`;
 
+  let embed = new MessageEmbed()
+    .setTitle("Kết quả cược xúc xắc")
+    .setDescription(`🎲 Kết quả: ${diceDisplay} (Tổng: ${total} - ${result.toUpperCase()})`)
+    .setFooter(`Số xu hiện tại: ${user.xu}`);
+
   if (choice === result) {
     user.xu += bet; // Thắng
     await user.save();
-    message.reply(
-      `🎲 Kết quả: ${diceDisplay} (Tổng: ${total} - ${result.toUpperCase()})\n🎉 Bạn đã thắng ${bet} xu! Số xu hiện tại: ${user.xu}`
-    );
+    embed.setColor("GREEN") // Màu xanh lá cây cho thắng
+      .setDescription(`🎉 Bạn đã thắng ${bet} xu! ${embed.description}`);
+    message.reply({ embeds: [embed] });
   } else {
     user.xu -= bet; // Thua
     await user.save();
-    message.reply(
-      `🎲 Kết quả: ${diceDisplay} (Tổng: ${total} - ${result.toUpperCase()})\n😢 Bạn đã thua ${bet} xu! Số xu hiện tại: ${user.xu}`
-    );
+    embed.setColor("RED") // Màu đỏ cho thua
+      .setDescription(`😢 Bạn đã thua ${bet} xu! ${embed.description}`);
+    message.reply({ embeds: [embed] });
   }
   break;
 }
         
       case 'daily': {
-        const reward = Math.floor(Math.random() * (50000 - 10000 + 1)) + 10000;
-        user.xu += reward;
-        await user.save();
-        message.reply(`Bạn đã nhận được ${reward} xu! Số xu hiện tại: ${user.xu}`);
-        break;
-      }
+  const reward = Math.floor(Math.random() * (50000 - 10000 + 1)) + 10000;
+  user.xu += reward;
+  await user.save();
+
+  let embed = new MessageEmbed()
+    .setTitle("Nhận xu hàng ngày")
+    .setDescription(`🎉 Bạn đã nhận được ${reward} xu!`)
+    .setColor("GREEN") // Màu xanh lá cây cho phần thưởng
+    .setFooter(`Số xu hiện tại: ${user.xu}`);
+
+  message.reply({ embeds: [embed] });
+  break;
+}
 
       case 'addimage': {
   if (!user.marriedTo) {
