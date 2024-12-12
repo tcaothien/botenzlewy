@@ -146,6 +146,55 @@ client.on('messageCreate', async (message) => {
         break;
       }
 
+      case 'addimage': {
+  if (!user.marriedTo) {
+    message.reply("Bạn hiện chưa kết hôn với ai! Không thể thêm ảnh kết hôn.");
+    break;
+  }
+
+  // Kiểm tra nếu người dùng đã có ảnh kết hôn
+  if (user.marriedImage) {
+    message.reply("Bạn đã có ảnh kết hôn rồi. Bạn chỉ có thể thay đổi ảnh kết hôn một lần.");
+    break;
+  }
+
+  // Kiểm tra xem có file đính kèm (ảnh) trong tin nhắn không
+  if (!message.attachments.size) {
+    message.reply("Vui lòng đính kèm một ảnh để làm ảnh kết hôn.");
+    break;
+  }
+
+  // Lấy ảnh đính kèm đầu tiên trong tin nhắn
+  const marriageImageUrl = message.attachments.first().url;
+
+  // Cập nhật ảnh kết hôn cho người dùng
+  user.marriedImage = marriageImageUrl;
+  await user.save();
+
+  message.reply("Ảnh kết hôn của bạn đã được thêm thành công!");
+  break;
+}
+
+      case 'delimage': {
+  if (!user.marriedTo) {
+    message.reply("Bạn hiện chưa kết hôn với ai! Không thể xóa ảnh kết hôn.");
+    break;
+  }
+
+  // Kiểm tra nếu người dùng không có ảnh kết hôn
+  if (!user.marriedImage) {
+    message.reply("Bạn chưa có ảnh kết hôn để xóa.");
+    break;
+  }
+
+  // Xóa ảnh kết hôn của người dùng
+  user.marriedImage = null;
+  await user.save();
+
+  message.reply("Ảnh kết hôn của bạn đã được xóa.");
+  break;
+}
+        
       case 'gives': {
         const target = message.mentions.users.first();
         const amount = parseInt(args[1]);
@@ -192,16 +241,34 @@ client.on('messageCreate', async (message) => {
       }
 
       case 'pmarry': {
-        if (!user.marriedTo) {
-          message.reply("Bạn hiện chưa kết hôn với ai!");
-          break;
-        }
+  if (!user.marriedTo) {
+    message.reply("Bạn hiện chưa kết hôn với ai!");
+    break;
+  }
 
-        const partner = await getUser(user.marriedTo);
-        const partnerName = partner ? `<@${partner.userId}>` : "Không xác định";
-        message.reply(`**Thông tin kết hôn của bạn:**\n- Vợ/chồng: ${partnerName}\n- Điểm yêu thương: ${user.lovePoints}\n- Số xu: ${user.xu}`);
-        break;
-      }
+  const partner = await getUser(user.marriedTo);
+  const partnerName = partner ? `<@${partner.userId}>` : "Không xác định";
+  const marriedDate = user.marriedDate ? user.marriedDate.toLocaleDateString() : "Chưa xác định"; // Ngày kết hôn
+  const marriedImage = user.marriedImage; // Lấy ảnh kết hôn nếu có
+  const lovePoints = user.lovePoints + (partner ? partner.lovePoints : 0); // Tính điểm yêu thương chung
+
+  // Tạo embed thông điệp với thông tin kết hôn và ảnh
+  const embed = {
+    color: 0xFF0000, // Màu đỏ
+    title: "Thông tin kết hôn",
+    description: `
+**Chúc mừng!** Bạn đang kết hôn với ${partnerName}.
+Ngày kết hôn: ${marriedDate}
+Điểm yêu thương chung: ${lovePoints}`,
+    image: marriedImage ? { url: marriedImage } : null, // Nếu có ảnh, thêm vào
+    timestamp: new Date(),
+    footer: { text: "Thông tin kết hôn" }
+  };
+
+  // Gửi embed thông điệp
+  message.channel.send({ embeds: [embed] });
+  break;
+}
 
         case 'divorce': {
   if (!user.marriedTo) {
@@ -244,7 +311,14 @@ client.on('messageCreate', async (message) => {
     if (reaction.emoji.name === "✅") {
       // Xác nhận ly hôn
       if (user.xu < 500000) {
-        message.reply("Bạn cần ít nhất 500,000 xu để ly hôn!");
+        message.reply({
+          embeds: [
+            {
+              color: 0xFF0000, // Màu đỏ
+              description: "Bạn cần ít nhất 500,000 xu để ly hôn!"
+            }
+          ]
+        });
         break;
       }
 
@@ -255,15 +329,34 @@ client.on('messageCreate', async (message) => {
       await user.save();
       await partner.save();
 
-      message.reply(
-        `Ly hôn thành công! Bạn và ${partner.userId} không còn là vợ/chồng của nhau.`
-      );
+      message.reply({
+        embeds: [
+          {
+            color: 0xFF0000, // Màu đỏ
+            description: `Ly hôn thành công! Bạn và ${partner.userId} không còn là vợ/chồng của nhau.`
+          }
+        ]
+      });
     } else {
       // Từ chối ly hôn
-      message.reply(`${partner.userId} đã từ chối yêu cầu ly hôn.`);
+      message.reply({
+        embeds: [
+          {
+            color: 0xFF0000, // Màu đỏ
+            description: `${partner.userId} đã từ chối yêu cầu ly hôn.`
+          }
+        ]
+      });
     }
   } catch (error) {
-    message.reply("Không nhận được phản hồi. Yêu cầu ly hôn đã bị hủy.");
+    message.reply({
+      embeds: [
+        {
+          color: 0xFF0000, // Màu đỏ
+          description: "Không nhận được phản hồi. Yêu cầu ly hôn đã bị hủy."
+        }
+      ]
+    });
   }
   break;
 }
