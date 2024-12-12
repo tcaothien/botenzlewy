@@ -148,19 +148,19 @@ client.on('messageCreate', async (message) => {
 
       case 'addimage': {
   if (!user.marriedTo) {
-    message.reply("Bạn hiện chưa kết hôn với ai! Không thể thêm ảnh kết hôn.");
+    message.reply("Bạn hiện chưa có marry! Không thể thêm ảnh marry.");
     break;
   }
 
   // Kiểm tra nếu người dùng đã có ảnh kết hôn
   if (user.marriedImage) {
-    message.reply("Bạn đã có ảnh kết hôn rồi. Bạn chỉ có thể thay đổi ảnh kết hôn một lần.");
+    message.reply("Bạn đã thêm ảnh marry rồi. Bạn chỉ có thể thay đổi ảnh khi đã xóa ảnh trước đó.");
     break;
   }
 
   // Kiểm tra xem có file đính kèm (ảnh) trong tin nhắn không
   if (!message.attachments.size) {
-    message.reply("Vui lòng đính kèm một ảnh để làm ảnh kết hôn.");
+    message.reply("Vui lòng đính kèm một ảnh để làm ảnh marry.");
     break;
   }
 
@@ -171,19 +171,19 @@ client.on('messageCreate', async (message) => {
   user.marriedImage = marriageImageUrl;
   await user.save();
 
-  message.reply("Ảnh kết hôn của bạn đã được thêm thành công!");
+  message.reply("Ảnh marry đã được thêm thành công!");
   break;
 }
 
       case 'delimage': {
   if (!user.marriedTo) {
-    message.reply("Bạn hiện chưa kết hôn với ai! Không thể xóa ảnh kết hôn.");
+    message.reply("Bạn hiện chưa marry! Không thể xóa ảnh marry.");
     break;
   }
 
   // Kiểm tra nếu người dùng không có ảnh kết hôn
   if (!user.marriedImage) {
-    message.reply("Bạn chưa có ảnh kết hôn để xóa.");
+    message.reply("Bạn không có ảnh để xóa.");
     break;
   }
 
@@ -191,7 +191,7 @@ client.on('messageCreate', async (message) => {
   user.marriedImage = null;
   await user.save();
 
-  message.reply("Ảnh kết hôn của bạn đã được xóa.");
+  message.reply("Ảnh marry đã được xóa.");
   break;
 }
         
@@ -255,7 +255,7 @@ client.on('messageCreate', async (message) => {
   // Tạo embed thông điệp với thông tin kết hôn và ảnh
   const embed = {
     color: 0xFF0000, // Màu đỏ
-    title: "Thông tin kết hôn",
+    title: "Marry",
     description: `
 **Chúc mừng!** Bạn đang kết hôn với ${partnerName}.
 Ngày kết hôn: ${marriedDate}
@@ -287,7 +287,7 @@ Ngày kết hôn: ${marriedDate}
 
   // Gửi yêu cầu ly hôn đến đối phương
   const confirmationMessage = await message.channel.send(
-    `<@${partner.userId}>, ${message.author.tag} muốn ly hôn với bạn. Bạn có đồng ý không?\n\nPhản hồi bằng:\n✅ Đồng ý\n❌ Từ chối`
+    `<@${partner.userId}>, ${message.author.tag} muốn ly hôn với bạn. Bạn có đồng ý không?\n\n✅ Đồng ý\n❌ Từ chối`
   );
 
   // Thêm reaction
@@ -333,7 +333,7 @@ Ngày kết hôn: ${marriedDate}
         embeds: [
           {
             color: 0xFF0000, // Màu đỏ
-            description: `Ly hôn thành công! Bạn và ${partner.userId} không còn là vợ/chồng của nhau.`
+            description: `Ly hôn thành công! Bạn và ${partner.userId} không còn là gì của nhau.`
           }
         ]
       });
@@ -362,73 +362,120 @@ Ngày kết hôn: ${marriedDate}
 }
         
       case 'marry': {
-        const target = message.mentions.users.first();
-        if (!target) {
-          message.reply("Hãy đề cập đến người bạn muốn cầu hôn!");
-          break;
-        }
+  const target = message.mentions.users.first();
+  if (!target) {
+    message.reply("Hãy đề cập đến người bạn muốn cầu hôn!");
+    break;
+  }
 
-        const partner = await getUser(target.id);
+  const partner = await getUser(target.id);
 
-        if (userId === target.id) {
-          message.reply("Bạn không thể kết hôn với chính mình!");
-          break;
-        }
+  if (userId === target.id) {
+    message.reply("Bạn không thể kết hôn với chính mình!");
+    break;
+  }
 
-        if (user.marriedTo) {
-          message.reply("Bạn đã kết hôn với người khác!");
-          break;
-        }
+  if (user.marriedTo) {
+    message.reply("Bạn đã kết hôn với người khác!");
+    break;
+  }
 
-        if (partner.marriedTo) {
-          message.reply(`${target.tag} đã kết hôn với người khác!`);
-          break;
-        }
+  if (partner.marriedTo) {
+    message.reply(`${target.tag} đã kết hôn với người khác!`);
+    break;
+  }
 
-        if (user.xu < 5000000) {
-          message.reply("Bạn cần ít nhất 5,000,000 xu để cầu hôn!");
-          break;
-        }
+  if (user.xu < 5000000) {
+    message.reply("Bạn cần ít nhất 5,000,000 xu để cầu hôn!");
+    break;
+  }
 
-        // Gửi yêu cầu cầu hôn
-        const proposalMessage = await message.channel.send(
-          `${target}, bạn có đồng ý kết hôn với ${message.author}? React ❤️ để đồng ý hoặc 💔 để từ chối (thời gian: 30 giây).`
-        );
+  // Gửi yêu cầu cầu hôn với thông báo embedded
+  const proposalMessage = await message.channel.send({
+    embeds: [
+      {
+        color: 16711680, // Màu đỏ
+        title: `Cầu hôn từ ${message.author.tag}`,
+        description: `${target}, bạn có đồng ý kết hôn với ${message.author.tag}?`,
+        fields: [
+          {
+            name: 'Thời gian phản hồi',
+            value: 'Phản hồi trong vòng 30 giây!',
+          },
+          {
+            name: 'Lựa chọn',
+            value: '❤️ Đồng ý | 💔 Từ chối',
+          },
+        ],
+        timestamp: new Date(),
+      },
+    ],
+  });
 
-        // Thêm react để trả lời
-        await proposalMessage.react("❤️");
-        await proposalMessage.react("💔");
+  // Thêm react để trả lời
+  await proposalMessage.react("❤️");
+  await proposalMessage.react("💔");
 
-        const filter = (reaction, userReact) =>
-          ["❤️", "💔"].includes(reaction.emoji.name) && userReact.id === target.id;
+  const filter = (reaction, userReact) =>
+    ["❤️", "💔"].includes(reaction.emoji.name) && userReact.id === target.id;
 
-        const collector = proposalMessage.createReactionCollector({ filter, time: 30000 });
+  const collector = proposalMessage.createReactionCollector({ filter, time: 30000 });
 
-        collector.on("collect", async (reaction) => {
-          if (reaction.emoji.name === "❤️") {
-            collector.stop();
+  collector.on("collect", async (reaction) => {
+    if (reaction.emoji.name === "❤️") {
+      collector.stop();
 
-            user.xu -= 5000000;
-            user.marriedTo = target.id;
-            partner.marriedTo = userId;
+      user.xu -= 5000000;
+      user.marriedTo = target.id;
+      partner.marriedTo = userId;
 
-            await user.save();
-            await partner.save();
+      await user.save();
+      await partner.save();
 
-            message.reply(`Chúc mừng! ${message.author} và ${target} đã chính thức kết hôn!`);
-          } else if (reaction.emoji.name === "💔") {
-            collector.stop();
-            message.reply(`${target.tag} đã từ chối lời cầu hôn của bạn.`);
-          }
-        });
+      // Thông báo thành công
+      message.reply({
+        embeds: [
+          {
+            color: 3066993, // Màu xanh lá (thành công)
+            title: "Cầu hôn thành công!",
+            description: `Chúc mừng! ${message.author.tag} và ${target.tag} đã chính thức kết hôn!`,
+            timestamp: new Date(),
+          },
+        ],
+      });
+    } else if (reaction.emoji.name === "💔") {
+      collector.stop();
 
-        collector.on("end", (collected) => {
-          if (collected.size === 0) {
-            message.reply("Yêu cầu cầu hôn đã hết hạn.");
-          }
-        });
-        break;
-      }
+      // Thông báo khi từ chối
+      message.reply({
+        embeds: [
+          {
+            color: 15158332, // Màu đỏ (từ chối)
+            title: "Lời cầu hôn bị từ chối",
+            description: `${target.tag} đã từ chối lời cầu hôn của bạn.`,
+            timestamp: new Date(),
+          },
+        ],
+      });
+    }
+  });
+
+  collector.on("end", (collected) => {
+    if (collected.size === 0) {
+      message.reply({
+        embeds: [
+          {
+            color: 16711680, // Màu đỏ (hết hạn)
+            title: "Yêu cầu cầu hôn đã hết hạn",
+            description: "Yêu cầu cầu hôn đã hết hạn. Vui lòng thử lại sau.",
+            timestamp: new Date(),
+          },
+        ],
+      });
+    }
+  });
+  break;
+}
 
       case 'delreply': {
         if (!isAdmin(message.member)) {
@@ -437,7 +484,7 @@ Ngày kết hôn: ${marriedDate}
         }
         const keyword = args[0];
         if (!keyword) {
-          message.reply("Hãy nhập từ khóa cần xóa: `e edelreply từ_khóa`");
+          message.reply("Hãy nhập từ khóa cần xóa: `e delreply từ_khóa`");
           break;
         }
         const deleted = await AutoReply.findOneAndDelete({ keyword });
@@ -454,7 +501,7 @@ Ngày kết hôn: ${marriedDate}
         const reply = args.slice(1).join(' ');
 
         if (!keyword || !reply) {
-          message.reply("Hãy nhập đúng định dạng: `e eaddreply từ_khóa nội_dung_trả_lời`");
+          message.reply("Hãy nhập đúng định dạng: `e addreply từ_khóa nội_dung_trả_lời`");
           break;
         }
 
@@ -495,7 +542,7 @@ Ngày kết hôn: ${marriedDate}
         const amount = parseInt(args[1]);
 
         if (!target || isNaN(amount) || amount <= 0) {
-          message.reply("Hãy nhập đúng định dạng: `e edelxu @user số_xu`");
+          message.reply("Hãy nhập đúng định dạng: `e delxu @user số_xu`");
           break;
         }
 
@@ -521,7 +568,7 @@ Ngày kết hôn: ${marriedDate}
         const amount = parseInt(args[1]);
 
         if (!target || isNaN(amount) || amount <= 0) {
-          message.reply("Hãy nhập đúng định dạng: `e eaddxu @user số_xu`");
+          message.reply("Hãy nhập đúng định dạng: `e addxu @user số_xu`");
           break;
         }
 
