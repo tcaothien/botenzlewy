@@ -14,6 +14,7 @@ const userSchema = new mongoose.Schema({
   marriedTo: { type: String, default: null },
   lovePoints: { type: Number, default: 0 },
   lastLove: { type: Date, default: null },
+  marriedImage: { type: String, default: null },
 });
 
 const autoReplySchema = new mongoose.Schema({
