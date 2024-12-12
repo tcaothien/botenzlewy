@@ -302,8 +302,7 @@ client.on('messageCreate', async (message) => {
         if (!keyword) {
           message.reply("Hãy nhập từ khóa cần xóa: `e removereply từ_khóa`");
           break;
-        }
-
+        } 
         const deleted = await AutoReply.findOneAndDelete({ keyword });
         message.reply(deleted ? `Đã xóa trả lời tự động cho từ khóa "${keyword}".` : "Không tìm thấy từ khóa!");
         break;
