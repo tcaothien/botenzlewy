@@ -80,12 +80,12 @@ client.on('messageCreate', async (message) => {
 
   try {
     switch (command) {
-      case 'exu': {
+      case 'xu': {
         message.reply(`Số dư của bạn: ${user.xu} xu.`);
         break;
       }
 
-      case 'edaily': {
+      case 'daily': {
         const reward = Math.floor(Math.random() * (50000 - 10000 + 1)) + 10000;
         user.xu += reward;
         await user.save();
@@ -93,7 +93,7 @@ client.on('messageCreate', async (message) => {
         break;
       }
 
-      case 'egives': {
+      case 'gives': {
         const target = message.mentions.users.first();
         const amount = parseInt(args[1]);
 
@@ -123,7 +123,7 @@ client.on('messageCreate', async (message) => {
         break;
       }
 
-      case 'elove': {
+      case 'love': {
         const now = new Date();
         if (user.lastLove && now - user.lastLove < 3600000) {
           const timeLeft = Math.ceil((3600000 - (now - user.lastLove)) / 60000);
@@ -138,7 +138,7 @@ client.on('messageCreate', async (message) => {
         break;
       }
 
-      case 'epmarry': {
+      case 'pmarry': {
         if (!user.marriedTo) {
           message.reply("Bạn hiện chưa kết hôn với ai!");
           break;
@@ -150,7 +150,72 @@ client.on('messageCreate', async (message) => {
         break;
       }
 
-      case 'emarry': {
+        case 'divorce': {
+  if (!user.marriedTo) {
+    message.reply("Bạn chưa kết hôn với ai!");
+    break;
+  }
+
+  const partner = await getUser(user.marriedTo);
+
+  if (!partner) {
+    message.reply(
+      "Không thể thực hiện ly hôn vì không tìm thấy thông tin của người mà bạn đã kết hôn. Vui lòng kiểm tra lại sau hoặc liên hệ quản trị viên!"
+    );
+    break;
+  }
+
+  // Gửi yêu cầu ly hôn đến đối phương
+  const confirmationMessage = await message.channel.send(
+    `<@${partner.userId}>, ${message.author.tag} muốn ly hôn với bạn. Bạn có đồng ý không?\n\nPhản hồi bằng:\n✅ Đồng ý\n❌ Từ chối`
+  );
+
+  // Thêm reaction
+  await confirmationMessage.react("✅");
+  await confirmationMessage.react("❌");
+
+  // Bộ lọc chỉ chấp nhận phản hồi từ đối phương
+  const filter = (reaction, user) =>
+    ["✅", "❌"].includes(reaction.emoji.name) && user.id === partner.userId;
+
+  try {
+    const collected = await confirmationMessage.awaitReactions({
+      filter,
+      max: 1,
+      time: 30000, // 30 giây
+      errors: ["time"],
+    });
+
+    const reaction = collected.first();
+
+    if (reaction.emoji.name === "✅") {
+      // Xác nhận ly hôn
+      if (user.xu < 500000) {
+        message.reply("Bạn cần ít nhất 500,000 xu để ly hôn!");
+        break;
+      }
+
+      user.xu -= 500000;
+      user.marriedTo = null;
+      partner.marriedTo = null;
+
+      await user.save();
+      await partner.save();
+
+      message.reply(
+        `Ly hôn thành công! Bạn và ${partner.userId} không còn là vợ/chồng của nhau.`
+      );
+    } else {
+      // Từ chối ly hôn
+      message.reply(`${partner.userId} đã từ chối yêu cầu ly hôn.`);
+    }
+  } catch (error) {
+    message.reply("Không nhận được phản hồi. Yêu cầu ly hôn đã bị hủy.");
+  }
+  break;
+}
+        
+      case 'marry': {
         const target = message.mentions.users.first();
         if (!target) {
           message.reply("Hãy đề cập đến người bạn muốn cầu hôn!");
@@ -219,7 +284,7 @@ client.on('messageCreate', async (message) => {
         break;
       }
 
-      case 'edelreply': {
+      case 'delreply': {
         if (!isAdmin(message.member)) {
           message.reply("Bạn không có quyền sử dụng lệnh này!");
           break;
@@ -234,7 +299,7 @@ client.on('messageCreate', async (message) => {
         break;
       }
 
-      case 'eaddreply': {
+      case 'addreply': {
         if (!isAdmin(message.member)) {
           message.reply("Bạn không có quyền sử dụng lệnh này!");
           break;
@@ -258,7 +323,7 @@ client.on('messageCreate', async (message) => {
         break;
       }
 
-      case 'elistreply': {
+      case 'listreply': {
         if (!isAdmin(message.member)) {
           message.reply("Bạn không có quyền sử dụng lệnh này!");
           break;
@@ -275,7 +340,7 @@ client.on('messageCreate', async (message) => {
         break;
       }
 
-      case 'edelxu': {
+      case 'delxu': {
         if (!isAdmin(message.member)) {
           message.reply("Bạn không có quyền sử dụng lệnh này!");
           break;
@@ -301,7 +366,7 @@ client.on('messageCreate', async (message) => {
         break;
       }
 
-      case 'eaddxu': {
+      case 'addxu': {
         if (!isAdmin(message.member)) {
           message.reply("Bạn không có quyền sử dụng lệnh này!");
           break;
@@ -326,17 +391,18 @@ client.on('messageCreate', async (message) => {
       case 'help': {
         const helpMessage = `
 **Danh sách lệnh hiện có:**
-- \`e exu\`: Kiểm tra số dư xu của bạn.
-- \`e edaily\`: Nhận xu ngẫu nhiên từ 10,000 đến 50,000 mỗi ngày.
-- \`e egives @user số_xu\`: Chuyển xu cho người dùng khác.
-- \`e elove\`: Tăng 1 điểm yêu thương (mỗi giờ sử dụng được 1 lần).
-- \`e epmarry\`: Hiển thị thông tin hôn nhân của bạn.
-- \`e emarry @user\`: Cầu hôn một người dùng khác (cần 5,000,000 xu và cả hai phải đồng ý).
-- \`e eaddreply từ_khóa nội_dung_trả_lời\`: Thêm trả lời tự động (admin).
-- \`e edelreply từ_khóa\`: Xóa trả lời tự động (admin).
-- \`e elistreply\`: Xem danh sách trả lời tự động (admin).
-- \`e eaddxu @user số_xu\`: Thêm xu cho người dùng (admin).
-- \`e edelxu @user số_xu\`: Trừ xu của người dùng (admin).
+- \`exu\`: Kiểm tra số dư xu của bạn.
+- \`edaily\`: Nhận xu ngẫu nhiên từ 10,000 đến 50,000 mỗi ngày.
+- \`egives\`: Chuyển xu cho người dùng khác.
+- \`elove\`: Tăng 1 điểm yêu thương (mỗi giờ sử dụng được 1 lần).
+- \`epmarry\`: Hiển thị thông tin hôn nhân của bạn.
+- \`emarry\`: Cầu hôn một người dùng khác (cần 5,000,000 xu và cả hai phải đồng ý).
+- \`edivorce\`: Ly hôn ( cần 500,000 xu để ly hôn )
+- \`eaddreply\`: Thêm trả lời tự động (admin).
+- \`edelreply\`: Xóa trả lời tự động (admin).
+- \`elistreply\`: Xem danh sách trả lời tự động (admin).
+- \`eaddxu\`: Thêm xu cho người dùng (admin).
+- \`edelxu\`: Trừ xu của người dùng (admin).
         `;
         message.reply(helpMessage);
         break;
