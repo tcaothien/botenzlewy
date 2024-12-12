@@ -234,7 +234,7 @@ case 'tx': {
 
   // Kiểm tra định dạng và dữ liệu nhập vào
   if (!target || isNaN(amount) || amount <= 0) {
-    message.reply("Hãy nhập đúng định dạng: `e gives @user số_xu`");
+    message.reply("Hãy nhập đúng định dạng: `egives @user số_xu`");
     break;
   }
 
@@ -329,6 +329,32 @@ Ngày kết hôn: ${marriedDate}
   break;
 }
 
+  case 'top': {
+  // Lấy tất cả người dùng từ cơ sở dữ liệu (ví dụ như MongoDB)
+  const users = await User.find().sort({ xu: -1 }).limit(10); // Giới hạn 10 người dùng có số xu cao nhất
+
+  if (users.length === 0) {
+    message.reply("Không có người dùng nào trong hệ thống.");
+    break;
+  }
+
+  // Tạo một danh sách với tên và số xu của người chơi
+  const topList = users.map((user, index) => 
+    `${index + 1}. ${user.username}: ${user.xu} xu`
+  ).join('\n');
+
+  // Tạo Embed để hiển thị thông tin
+  const topMessage = new MessageEmbed()
+    .setTitle('Top Người Dùng Có Số Xu Cao Nhất')
+    .setDescription(topList)
+    .setColor('#ff9900') // Màu vàng cho nổi bật
+    .setFooter('Được cung cấp bởi Bot của bạn'); // Chân trang
+
+  // Gửi Embed ra kênh
+  message.channel.send({ embeds: [topMessage] });
+  break;
+}   
+        
         case 'divorce': {
   if (!user.marriedTo) {
     message.reply("Bạn chưa kết hôn với ai!");
@@ -545,7 +571,7 @@ Ngày kết hôn: ${marriedDate}
 
   const keyword = args[0]; // Từ khóa cần xóa
   if (!keyword) {
-    message.reply("Hãy nhập từ khóa cần xóa: `e delreply từ_khóa`");
+    message.reply("Hãy nhập từ khóa cần xóa: `edelreply từ_khóa`");
     break;
   }
 
@@ -578,7 +604,7 @@ Ngày kết hôn: ${marriedDate}
   const reply = args.slice(1).join(' ');
 
   if (!keyword || !reply) {
-    message.reply("Hãy nhập đúng định dạng: `e addreply từ_khóa nội_dung_trả_lời`");
+    message.reply("Hãy nhập đúng định dạng: `eaddreply từ_khóa nội_dung_trả_lời`");
     break;
   }
 
@@ -645,7 +671,7 @@ Ngày kết hôn: ${marriedDate}
   const amount = parseInt(args[1]);
 
   if (!target || isNaN(amount) || amount <= 0) {
-    message.reply("Hãy nhập đúng định dạng: `e delxu @user số_xu`");
+    message.reply("Hãy nhập đúng định dạng: `edelxu @user số_xu`");
     break;
   }
 
@@ -681,7 +707,7 @@ Ngày kết hôn: ${marriedDate}
   const amount = parseInt(args[1]);
 
   if (!target || isNaN(amount) || amount <= 0) {
-    message.reply("Hãy nhập đúng định dạng: `e addxu @user số_xu`");
+    message.reply("Hãy nhập đúng định dạng: `eaddxu @user số_xu`");
     break;
   }
 
@@ -743,6 +769,7 @@ case 'helps': {
     .setDescription(`
 **Danh sách lệnh:**
 - \`exu\`: Kiểm tra số dư xu của bạn.
+- \`etop\`: Top xu 
 - \`etx\`: Chơi tài xỉu cách chơi etx xu tai/xiu.
 - \`edaily\`: Nhận xu ngẫu nhiên từ 10,000 đến 50,000 mỗi ngày.
 - \`egives\`: Chuyển xu cho người dùng khác.
@@ -761,7 +788,8 @@ case 'helps': {
     .setColor('#7289da') // Màu sắc của Embed (màu Discord xanh)
     .setFooter('Được cung cấp bởi Bot của bạn'); // Chân trang
 
-  message.reply({ embeds: [helpMessage] });
+  // Gửi tin nhắn với Embed
+  message.channel.send({ embeds: [helpMessage] });
   break;
 }
     } // Đóng switch
