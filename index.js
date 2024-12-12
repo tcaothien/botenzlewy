@@ -767,7 +767,7 @@ case 'helps': {
     .setDescription(`
 **Danh sách lệnh:**
 - \`exu\`: Kiểm tra số dư xu của bạn.
-- \`etop\`: Top xu 
+- \`etop\`: Top xu
 - \`etx\`: Chơi tài xỉu cách chơi etx xu tai/xiu.
 - \`edaily\`: Nhận xu ngẫu nhiên từ 10,000 đến 50,000 mỗi ngày.
 - \`egives\`: Chuyển xu cho người dùng khác.
