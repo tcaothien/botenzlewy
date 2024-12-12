@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, PermissionsBitField, MessageEmbed } = require('discord.js');  // Đã thêm MessageEmbed
+const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
 const mongoose = require('mongoose');
 
 // Thiết lập strictQuery để tránh cảnh báo
@@ -89,7 +89,7 @@ client.on('messageCreate', async (message) => {
         break;
       }
 
-case 'tx': {
+      case 'tx': {
   const bet = parseInt(args[0]); // Số tiền cược
   const choice = args[1]?.toLowerCase(); // "tai" hoặc "xiu"
 
@@ -126,41 +126,29 @@ case 'tx': {
   // Hiển thị xúc xắc bằng emoji
   const diceDisplay = `${diceToEmoji(dice1)} ${diceToEmoji(dice2)} ${diceToEmoji(dice3)}`;
 
-  let embed = new MessageEmbed()
-    .setTitle("Kết quả cược xúc xắc")
-    .setDescription(`🎲 Kết quả: ${diceDisplay} (Tổng: ${total} - ${result.toUpperCase()})`)
-    .setFooter(`Số xu hiện tại: ${user.xu}`);
-
   if (choice === result) {
     user.xu += bet; // Thắng
     await user.save();
-    embed.setColor("GREEN") // Màu xanh lá cây cho thắng
-      .setDescription(`🎉 Bạn đã thắng ${bet} xu! ${embed.description}`);
-    message.reply({ embeds: [embed] });
+    message.reply(
+      `🎲 Kết quả: ${diceDisplay} (Tổng: ${total} - ${result.toUpperCase()})\n🎉 Bạn đã thắng ${bet} xu! Số xu hiện tại: ${user.xu}`
+    );
   } else {
     user.xu -= bet; // Thua
     await user.save();
-    embed.setColor("RED") // Màu đỏ cho thua
-      .setDescription(`😢 Bạn đã thua ${bet} xu! ${embed.description}`);
-    message.reply({ embeds: [embed] });
+    message.reply(
+      `🎲 Kết quả: ${diceDisplay} (Tổng: ${total} - ${result.toUpperCase()})\n😢 Bạn đã thua ${bet} xu! Số xu hiện tại: ${user.xu}`
+    );
   }
   break;
 }
         
       case 'daily': {
-  const reward = Math.floor(Math.random() * (50000 - 10000 + 1)) + 10000;
-  user.xu += reward;
-  await user.save();
-
-  let embed = new MessageEmbed()
-    .setTitle("Nhận xu hàng ngày")
-    .setDescription(`🎉 Bạn đã nhận được ${reward} xu!`)
-    .setColor("GREEN") // Màu xanh lá cây cho phần thưởng
-    .setFooter(`Số xu hiện tại: ${user.xu}`);
-
-  message.reply({ embeds: [embed] });
-  break;
-}
+        const reward = Math.floor(Math.random() * (50000 - 10000 + 1)) + 10000;
+        user.xu += reward;
+        await user.save();
+        message.reply(`Bạn đã nhận được ${reward} xu! Số xu hiện tại: ${user.xu}`);
+        break;
+      }
 
       case 'addimage': {
   if (!user.marriedTo) {
@@ -187,15 +175,7 @@ case 'tx': {
   user.marriedImage = marriageImageUrl;
   await user.save();
 
-  // Tạo thông báo thành công với MessageEmbed
-  const embed = new MessageEmbed()
-    .setTitle("Ảnh Marry đã được thêm thành công!")
-    .setDescription("Ảnh kết hôn của bạn đã được cập nhật.")
-    .setImage(marriageImageUrl)
-    .setColor("GREEN")
-    .setFooter(`Số xu hiện tại: ${user.xu}`);
-
-  message.reply({ embeds: [embed] });
+  message.reply("Ảnh marry đã được thêm thành công!");
   break;
 }
 
@@ -215,87 +195,54 @@ case 'tx': {
   user.marriedImage = null;
   await user.save();
 
-  // Tạo thông báo xóa ảnh với MessageEmbed
-  const embed = new MessageEmbed()
-    .setTitle("Ảnh Marry đã được xóa!")
-    .setDescription("Ảnh kết hôn của bạn đã được xóa thành công.")
-    .setColor("RED")
-    .setFooter(`Số xu hiện tại: ${user.xu}`);
-
-  message.reply({ embeds: [embed] });
+  message.reply("Ảnh marry đã được xóa.");
   break;
 }
         
       case 'gives': {
-  const target = message.mentions.users.first();
-  const amount = parseInt(args[1]);
+        const target = message.mentions.users.first();
+        const amount = parseInt(args[1]);
 
-  // Kiểm tra định dạng và dữ liệu nhập vào
-  if (!target || isNaN(amount) || amount <= 0) {
-    message.reply("Hãy nhập đúng định dạng: `egives @user số_xu`");
-    break;
-  }
+        if (!target || isNaN(amount) || amount <= 0) {
+          message.reply("Hãy nhập đúng định dạng: `e egives @user số_xu`");
+          break;
+        }
 
-  const receiver = await getUser(target.id);
+        const receiver = await getUser(target.id);
+        if (userId === target.id) {
+          message.reply("Bạn không thể chuyển xu cho chính mình!");
+          break;
+        }
 
-  // Kiểm tra xem người dùng có cố gắng chuyển xu cho chính mình không
-  if (user.id === target.id) {
-    message.reply("Bạn không thể chuyển xu cho chính mình!");
-    break;
-  }
+        if (user.xu < amount) {
+          message.reply("Bạn không đủ xu để thực hiện giao dịch!");
+          break;
+        }
 
-  // Kiểm tra số xu có đủ để chuyển không
-  if (user.xu < amount) {
-    message.reply("Bạn không đủ xu để thực hiện giao dịch!");
-    break;
-  }
+        user.xu -= amount;
+        receiver.xu += amount;
 
-  // Thực hiện giao dịch: trừ xu của người gửi và cộng xu cho người nhận
-  user.xu -= amount;
-  receiver.xu += amount;
+        await user.save();
+        await receiver.save();
 
-  await user.save();
-  await receiver.save();
-
-  // Tạo thông báo thành công với MessageEmbed
-  const embed = new MessageEmbed()
-    .setTitle("Giao dịch thành công!")
-    .setDescription(`Bạn đã chuyển ${amount} xu cho ${target.tag}.`)
-    .addField("Số xu hiện tại của bạn", user.xu, true)
-    .addField("Số xu hiện tại của ${target.tag}", receiver.xu, true)
-    .setColor("GREEN")
-    .setFooter(`Giao dịch thực hiện lúc: ${new Date().toLocaleString()}`);
-
-  message.reply({ embeds: [embed] });
-  break;
-}
+        message.reply(`Bạn đã chuyển ${amount} xu cho ${target.tag}. Số xu hiện tại của bạn: ${user.xu}`);
+        break;
+      }
 
       case 'love': {
-  const now = new Date();
+        const now = new Date();
+        if (user.lastLove && now - user.lastLove < 3600000) {
+          const timeLeft = Math.ceil((3600000 - (now - user.lastLove)) / 60000);
+          message.reply(`Bạn chỉ có thể sử dụng lệnh này sau ${timeLeft} phút nữa.`);
+          break;
+        }
 
-  // Kiểm tra xem người dùng có thể sử dụng lệnh này lại hay không (mỗi giờ chỉ có thể dùng 1 lần)
-  if (user.lastLove && now - user.lastLove < 3600000) {
-    const timeLeft = Math.ceil((3600000 - (now - user.lastLove)) / 60000);
-    message.reply(`Bạn chỉ có thể sử dụng lệnh này sau ${timeLeft} phút nữa.`);
-    break;
-  }
-
-  // Cập nhật thời gian sử dụng lệnh và tăng điểm yêu thương
-  user.lastLove = now;
-  user.lovePoints += 1;
-  await user.save();
-
-  // Tạo thông báo với MessageEmbed
-  const embed = new MessageEmbed()
-    .setTitle("Điểm yêu thương đã được thu thập!")
-    .setDescription(`Chúc mừng! Bạn đã được 1 điểm yêu thương.`)
-    .addField("Điểm yêu thương hiện tại", user.lovePoints, true)
-    .setColor("RED")
-    .setFooter(`Cập nhật lúc: ${new Date().toLocaleString()}`);
-
-  message.reply({ embeds: [embed] });
-  break;
-}
+        user.lastLove = now;
+        user.lovePoints += 1;
+        await user.save();
+        message.reply(`Bạn đã tăng 1 điểm yêu thương! Điểm yêu thương hiện tại: ${user.lovePoints}`);
+        break;
+      }
 
       case 'pmarry': {
   if (!user.marriedTo) {
@@ -327,32 +274,6 @@ Ngày kết hôn: ${marriedDate}
   break;
 }
 
-  case 'top': {
-  // Lấy tất cả người dùng từ cơ sở dữ liệu (ví dụ như MongoDB)
-  const users = await User.find().sort({ xu: -1 }).limit(10); // Giới hạn 10 người dùng có số xu cao nhất
-
-  if (users.length === 0) {
-    message.reply("Không có người dùng nào trong hệ thống.");
-    break;
-  }
-
-  // Tạo một danh sách với tên và số xu của người chơi
-  const topList = users.map((user, index) => 
-    `${index + 1}. ${user.username}: ${user.xu} xu`
-  ).join('\n');
-
-  // Tạo Embed để hiển thị thông tin
-  const topMessage = new MessageEmbed()
-    .setTitle('Top Người Dùng Có Số Xu Cao Nhất')
-    .setDescription(topList)
-    .setColor('#ff9900') // Màu vàng cho nổi bật
-    .setFooter('Được cung cấp bởi Bot của bạn'); // Chân trang
-
-  // Gửi Embed ra kênh
-  message.channel.send({ embeds: [topMessage] });
-  break;
-}   
-        
         case 'divorce': {
   if (!user.marriedTo) {
     message.reply("Bạn chưa kết hôn với ai!");
@@ -561,235 +482,129 @@ Ngày kết hôn: ${marriedDate}
 }
 
       case 'delreply': {
-  // Kiểm tra quyền admin
-  if (!isAdmin(message.member)) {
-    message.reply("Bạn không có quyền sử dụng lệnh này!");
-    break;
-  }
-
-  const keyword = args[0]; // Từ khóa cần xóa
-  if (!keyword) {
-    message.reply("Hãy nhập từ khóa cần xóa: `edelreply từ_khóa`");
-    break;
-  }
-
-  // Tìm và xóa trả lời tự động tương ứng với từ khóa
-  const deleted = await AutoReply.findOneAndDelete({ keyword });
-
-  // Tạo thông báo với MessageEmbed
-  const embed = new MessageEmbed()
-    .setTitle("Kết quả xóa trả lời tự động")
-    .setColor(deleted ? "GREEN" : "RED")
-    .setDescription(
-      deleted
-        ? `Đã xóa trả lời tự động cho từ khóa **"${keyword}"**.`
-        : `Không tìm thấy trả lời tự động cho từ khóa **"${keyword}"**.`
-    )
-    .setFooter(`Yêu cầu từ: ${message.author.tag}`);
-
-  // Gửi thông báo
-  message.reply({ embeds: [embed] });
-  break;
-}
+        if (!isAdmin(message.member)) {
+          message.reply("Bạn không có quyền sử dụng lệnh này!");
+          break;
+        }
+        const keyword = args[0];
+        if (!keyword) {
+          message.reply("Hãy nhập từ khóa cần xóa: `e delreply từ_khóa`");
+          break;
+        }
+        const deleted = await AutoReply.findOneAndDelete({ keyword });
+        message.reply(deleted ? `Đã xóa trả lời tự động cho từ khóa "${keyword}".` : "Không tìm thấy từ khóa!");
+        break;
+      }
 
       case 'addreply': {
-  if (!isAdmin(message.member)) {
-    message.reply("Bạn không có quyền sử dụng lệnh này!");
-    break;
-  }
+        if (!isAdmin(message.member)) {
+          message.reply("Bạn không có quyền sử dụng lệnh này!");
+          break;
+        }
+        const keyword = args[0];
+        const reply = args.slice(1).join(' ');
 
-  const keyword = args[0];
-  const reply = args.slice(1).join(' ');
+        if (!keyword || !reply) {
+          message.reply("Hãy nhập đúng định dạng: `e addreply từ_khóa nội_dung_trả_lời`");
+          break;
+        }
 
-  if (!keyword || !reply) {
-    message.reply("Hãy nhập đúng định dạng: `eaddreply từ_khóa nội_dung_trả_lời`");
-    break;
-  }
+        const exists = await AutoReply.findOne({ keyword });
+        if (exists) {
+          message.reply("Từ khóa đã tồn tại!");
+          break;
+        }
 
-  // Kiểm tra xem từ khóa đã tồn tại chưa
-  const exists = await AutoReply.findOne({ keyword });
-  if (exists) {
-    message.reply("Từ khóa đã tồn tại!");
-    break;
-  }
-
-  // Thêm trả lời tự động mới
-  await AutoReply.create({ keyword, reply });
-
-  // Tạo thông báo với MessageEmbed
-  const embed = new MessageEmbed()
-    .setTitle("Thêm trả lời tự động thành công")
-    .setColor("GREEN")
-    .setDescription(`Đã thêm trả lời tự động cho từ khóa **"${keyword}"**. Khi gặp từ khóa này, bot sẽ trả lời: "${reply}".`)
-    .setFooter(`Yêu cầu từ: ${message.author.tag}`);
-
-  // Gửi thông báo
-  message.reply({ embeds: [embed] });
-  break;
-}
+        await AutoReply.create({ keyword, reply });
+        message.reply(`Đã thêm trả lời tự động: Khi gặp "${keyword}", bot sẽ trả lời "${reply}".`);
+        break;
+      }
 
       case 'listreply': {
-  if (!isAdmin(message.member)) {
-    message.reply("Bạn không có quyền sử dụng lệnh này!");
-    break;
-  }
+        if (!isAdmin(message.member)) {
+          message.reply("Bạn không có quyền sử dụng lệnh này!");
+          break;
+        }
+        const replies = await AutoReply.find();
+        if (replies.length === 0) {
+          message.reply("Chưa có trả lời tự động nào.");
+          break;
+        }
 
-  const replies = await AutoReply.find();
-  if (replies.length === 0) {
-    message.reply("Chưa có trả lời tự động nào.");
-    break;
-  }
-
-  // Tạo danh sách trả lời tự động
-  const replyList = replies.map(r => `- **"${r.keyword}"** → "${r.reply}"`).join('\n');
-  
-  // Chia danh sách thành nhiều phần nếu quá dài
-  const chunks = replyList.match(/[\s\S]{1,1900}/g); 
-
-  chunks.forEach(chunk => {
-    const embed = new MessageEmbed()
-      .setTitle("Danh sách trả lời tự động")
-      .setColor("BLUE")
-      .setDescription(chunk)
-      .setFooter(`Yêu cầu từ: ${message.author.tag}`);
-
-    message.channel.send({ embeds: [embed] });
-  });
-
-  break;
-}
+        const replyList = replies.map(r => `- "${r.keyword}" → "${r.reply}"`).join('\n');
+        const chunks = replyList.match(/[\s\S]{1,1900}/g); // Chia nhỏ nếu quá dài
+        chunks.forEach(chunk => message.channel.send(chunk));
+        break;
+      }
 
       case 'delxu': {
-  if (!isAdmin(message.member)) {
-    message.reply("Bạn không có quyền sử dụng lệnh này!");
-    break;
-  }
+        if (!isAdmin(message.member)) {
+          message.reply("Bạn không có quyền sử dụng lệnh này!");
+          break;
+        }
+        const target = message.mentions.users.first();
+        const amount = parseInt(args[1]);
 
-  const target = message.mentions.users.first();
-  const amount = parseInt(args[1]);
+        if (!target || isNaN(amount) || amount <= 0) {
+          message.reply("Hãy nhập đúng định dạng: `e delxu @user số_xu`");
+          break;
+        }
 
-  if (!target || isNaN(amount) || amount <= 0) {
-    message.reply("Hãy nhập đúng định dạng: `edelxu @user số_xu`");
-    break;
-  }
+        const receiver = await getUser(target.id);
+        if (receiver.xu < amount) {
+          message.reply("Người dùng này không có đủ xu để trừ!");
+          break;
+        }
 
-  const receiver = await getUser(target.id);
-  if (receiver.xu < amount) {
-    message.reply("Người dùng này không có đủ xu để trừ!");
-    break;
-  }
+        receiver.xu -= amount;
+        await receiver.save();
 
-  // Trừ xu của người dùng
-  receiver.xu -= amount;
-  await receiver.save();
-
-  // Tạo thông báo với MessageEmbed
-  const embed = new MessageEmbed()
-    .setTitle("Trừ xu thành công")
-    .setColor("RED")
-    .setDescription(`Đã trừ **${amount} xu** từ **${target.tag}**.\nSố xu hiện tại của họ: **${receiver.xu}**`)
-    .setFooter(`Yêu cầu từ: ${message.author.tag}`);
-
-  // Gửi thông báo
-  message.reply({ embeds: [embed] });
-  break;
-}
+        message.reply(`Đã trừ ${amount} xu từ ${target.tag}. Số xu hiện tại của họ: ${receiver.xu}`);
+        break;
+      }
 
       case 'addxu': {
-  if (!isAdmin(message.member)) {
-    message.reply("Bạn không có quyền sử dụng lệnh này!");
-    break;
-  }
+        if (!isAdmin(message.member)) {
+          message.reply("Bạn không có quyền sử dụng lệnh này!");
+          break;
+        }
+        const target = message.mentions.users.first();
+        const amount = parseInt(args[1]);
 
-  const target = message.mentions.users.first();
-  const amount = parseInt(args[1]);
+        if (!target || isNaN(amount) || amount <= 0) {
+          message.reply("Hãy nhập đúng định dạng: `e addxu @user số_xu`");
+          break;
+        }
 
-  if (!target || isNaN(amount) || amount <= 0) {
-    message.reply("Hãy nhập đúng định dạng: `eaddxu @user số_xu`");
-    break;
-  }
+        const receiver = await getUser(target.id);
 
-  const receiver = await getUser(target.id);
+        receiver.xu += amount;
+        await receiver.save();
 
-  // Thêm xu cho người dùng
-  receiver.xu += amount;
-  await receiver.save();
+        message.reply(`Đã thêm ${amount} xu cho ${target.tag}. Số xu hiện tại của họ: ${receiver.xu}`);
+        break;
+      }
 
-  // Tạo thông báo với MessageEmbed
-  const embed = new MessageEmbed()
-    .setTitle("Thêm xu thành công")
-    .setColor("GREEN")
-    .setDescription(`Đã thêm **${amount} xu** cho **${target.tag}**.\nSố xu hiện tại của họ: **${receiver.xu}**`)
-    .setFooter(`Yêu cầu từ: ${message.author.tag}`);
-
-  // Gửi thông báo
-  message.reply({ embeds: [embed] });
-  break;
-}
-
-case 'resetalldulieugwwennn': {
-  if (!isAdmin(message.member)) {
-    message.reply("Bạn không có quyền sử dụng lệnh này!");
-    break;
-  }
-
-  // Xác nhận việc reset toàn bộ dữ liệu
-  const confirmation = args[0];
-  if (confirmation !== 'confirm') {
-    message.reply("Để xác nhận reset toàn bộ dữ liệu, vui lòng sử dụng lệnh: `eresetalldulieugwwennn confirm`.");
-    break;
-  }
-
-  // Tiến hành reset số dư xu và dữ liệu kết hôn của tất cả người dùng
-  const users = await User.find(); // Giả sử User là mô hình lưu trữ thông tin người dùng
-  if (users.length === 0) {
-    message.reply("Không có người dùng nào trong hệ thống.");
-    break;
-  }
-
-  // Lặp qua tất cả người dùng và reset xu và xóa toàn bộ dữ liệu kết hôn
-  for (const user of users) {
-    user.xu = 0; // Đặt lại xu về 0
-    user.marriedTo = null; // Xóa thông tin kết hôn
-    user.marriedImage = null; // Xóa ảnh kết hôn
-    user.lovePoints = 0; // Reset điểm yêu thương
-    await user.save(); // Lưu lại thay đổi
-  }
-
-  message.reply("Đã xóa hoàn toàn dữ liệu kết hôn và reset số dư xu của tất cả người dùng.");
-  break;
-}
-
-
-case 'helps': {
-  const helpMessage = new MessageEmbed()
-    .setTitle('Danh sách lệnh hiện có:')
-    .setDescription(`
-**Danh sách lệnh:**
+      case 'helps': {
+        const helpMessage = `
+**Danh sách lệnh hiện có:**
 - \`exu\`: Kiểm tra số dư xu của bạn.
-- \`etop\`: Top xu
-- \`etx\`: Chơi tài xỉu cách chơi etx xu tai/xiu.
+- \`etx\`: chơi tài xỉu cách chơi etx xu tai/xiu
 - \`edaily\`: Nhận xu ngẫu nhiên từ 10,000 đến 50,000 mỗi ngày.
 - \`egives\`: Chuyển xu cho người dùng khác.
 - \`elove\`: Tăng 1 điểm yêu thương (mỗi giờ sử dụng được 1 lần).
 - \`epmarry\`: Hiển thị thông tin hôn nhân của bạn.
 - \`emarry\`: Cầu hôn một người dùng khác (cần 5,000,000 xu và cả hai phải đồng ý).
-- \`exu\`: Xóa ảnh khỏi thông tin hôn nhân của bạn.
-- \`edelimage\`: Thêm ảnh vào thông tin hôn nhân của bạn.
-- \`edivorce\`: Ly hôn (cần 500,000 xu để ly hôn).
+- \`edivorce\`: Ly hôn ( cần 500,000 xu để ly hôn )
 - \`eaddreply\`: Thêm trả lời tự động (admin).
 - \`edelreply\`: Xóa trả lời tự động (admin).
 - \`elistreply\`: Xem danh sách trả lời tự động (admin).
 - \`eaddxu\`: Thêm xu cho người dùng (admin).
 - \`edelxu\`: Trừ xu của người dùng (admin).
-    `)
-    .setColor('#7289da') // Màu sắc của Embed (màu Discord xanh)
-    .setFooter('Được cung cấp bởi Bot của bạn'); // Chân trang
-
-  // Gửi tin nhắn với Embed
-  message.channel.send({ embeds: [helpMessage] });
-  break;
-}
+        `;
+        message.reply(helpMessage);
+        break;
+      }
     } // Đóng switch
 
   } catch (err) {
